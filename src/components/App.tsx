@@ -28,8 +28,8 @@ export default class App extends React.Component<AppProps, AppState> {
       <Provider store={store}>
         <Router>
           <Switch>
-            <Route path="/about" component={NotFoundPage} />
-            <Route path="/" component={Home} />
+            <Route exact path="/" component={Home} />
+            <Route path="*" component={NotFoundPage} />
           </Switch>
         </Router>
       </Provider>
