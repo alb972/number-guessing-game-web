@@ -1,0 +1,28 @@
+version: '3.3'
+
+services:
+  nginx-local:
+    image: number-guessing-game-web
+    container_name: nginx-local
+    restart: always
+    ports:
+      - "8081:80"
+    labels:
+      - "traefik.enable=true"
+      # router
+      - "traefik.http.routers.router1.rule=Host(`web.alby-planet.com`)"
+      - "traefik.http.routers.router1.tls=true"
+      - "traefik.http.routers.router1.entrypoints=websecure"
+      - "traefik.http.routers.router1.tls.certresolver=acme-http"
+      # middleware
+      - "traefik.http.routers.router1-redirect.entrypoints=web"
+      - "traefik.http.routers.router1-redirect.middlewares=https-redirect"
+      - "traefik.http.routers.router1-redirect.rule=Host(`web.alby-planet.com`)"
+    networks:
+      - traefik_default
+      
+networks:
+  default:
+  traefik_default:
+    external:
+      name: traefik_default
