@@ -2,3 +2,11 @@ $blue: #0000ff;
 html {
     background-color: #fff;
 }
+
+.inputError {
+    border: solid red 2px;
+}
+
+.counter {
+    display: flex;
+}
