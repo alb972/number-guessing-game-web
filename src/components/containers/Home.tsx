@@ -5,6 +5,7 @@ import { StoreState } from "../../reducers/indexReducers";
 import { inctCounter, dectCounter } from "../../actions/counterActions";
 import { StoreDispatch } from "../App";
 import * as API from "../../middleware/api";
+import { GameView } from "./Game";
 
 interface HomeProps {
   counter: CounterStoreInterface;
@@ -12,10 +13,16 @@ interface HomeProps {
   decrement: () => void;
 }
 
-interface HomeState {
+interface NGGGame {
   currentGameId: string | null;
-  propositionValue: string;
-  guessState: string;
+  numberToGuess: number | null;
+}
+
+interface HomeState {
+  games: Array<NGGGame>;
+  shouldDisplayRestartView: boolean;
+  levels: Array<string>;
+  currentLevel: number;
 }
 
 class Home extends React.Component<HomeProps, HomeState> {
@@ -23,85 +30,104 @@ class Home extends React.Component<HomeProps, HomeState> {
     super(props);
 
     this.state = {
-      currentGameId: null,
-      propositionValue: "",
-      guessState: "",
+      games: [],
+      shouldDisplayRestartView: false,
+      levels: ["EASY", "MEDIUM", "HARD"],
+      currentLevel: 0,
     };
 
-    this.handlePropositionChange = this.handlePropositionChange.bind(this);
     this.handleCreateGame = this.handleCreateGame.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handlePropositionChange(event: any) {
-    this.setState({ propositionValue: event.target.value });
+    this.handleDecrementLevel = this.handleDecrementLevel.bind(this);
+    this.handleIncrementLevel = this.handleIncrementLevel.bind(this);
+    this.handleQuitGame = this.handleQuitGame.bind(this);
+    this.handleOpenRestartView = this.handleOpenRestartView.bind(this);
   }
 
   async handleCreateGame() {
+    const { games, currentLevel, levels } = this.state;
+
     try {
-      const apiResponse = await API.createGame();
+      const apiResponse = await API.createGame(levels[currentLevel]);
       const gameCreated = apiResponse.data;
-      this.setState({ currentGameId: gameCreated.id });
+      this.setState({
+        shouldDisplayRestartView: false,
+        games: [
+          ...games,
+          {
+            currentGameId: gameCreated.id,
+            numberToGuess: gameCreated.currentGuess,
+          },
+        ],
+      });
     } catch (error) {
       console.log("ERR: handleCreateGame");
     }
   }
 
-  async handleSubmit(event: any) {
-    event.preventDefault();
-    const { currentGameId, propositionValue } = this.state;
-    if (currentGameId !== null) {
-      if (propositionValue.length > 0) {
-        const propositionToSend: number = parseInt(propositionValue);
+  handleDecrementLevel() {
+    const { currentLevel, levels } = this.state;
+    console.log(currentLevel);
+    this.setState({ currentLevel: (currentLevel - 1) % levels.length });
+  }
 
-        try {
-          const apiResponse = await API.sendProposition(currentGameId, propositionToSend);
-          const result = apiResponse.data;
-          this.setState({ propositionValue: "", guessState: result.state });
-        } catch (error) {
-          console.log("ERR: handleSubmit!");
-        }
-      } else {
-        console.log("ERR: a proposition is required!");
-      }
-    } else {
-      console.log("ERR: we cannot retrieve the game!");
-    }
+  handleIncrementLevel() {
+    const { currentLevel, levels } = this.state;
+    this.setState({ currentLevel: (currentLevel + 1) % levels.length });
+  }
+
+  handleOpenRestartView() {
+    this.setState({ shouldDisplayRestartView: true });
+  }
+
+  handleQuitGame() {
+    this.setState({ games: [] });
   }
 
   render() {
-    const { currentGameId, propositionValue, guessState } = this.state;
+    const { games, shouldDisplayRestartView, levels, currentLevel } = this.state;
     return (
       <div>
         <h1>Number guessing game</h1>
-        {currentGameId !== null ? (
+        {games.length > 0 ? (
           <>
-            <p>We have selected a random number between 1 and 100.</p>
-            <p>See if you can guess it in 10 turns or fewer.</p>
-            <p> We&apos;ll tell you if your guess was too high or too low.</p>
-            <form onSubmit={this.handleSubmit} noValidate>
-              <label htmlFor="name">Enter a guess:</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={propositionValue}
-                onChange={this.handlePropositionChange}
-                minLength={1}
-                maxLength={3}
-                size={10}
-              />
-              <button type="submit">Submit guess</button>
-            </form>
-            {guessState === "TOO_LOW" && <p>Too low!</p>}
-            {guessState === "TOO_HIGH" && <p>Too high!</p>}
-            {guessState === "FOUND" && <p>Found!</p>}
+            {games.map((game) => {
+              return (
+                <GameView
+                  key={game.currentGameId}
+                  currentGameId={game.currentGameId}
+                  numberToGuess={game.numberToGuess}
+                  toggleRestartViewHandler={this.handleOpenRestartView}
+                />
+              );
+            })}
+            {shouldDisplayRestartView && (
+              <>
+                <button type="button" onClick={this.handleCreateGame}>
+                  Retry ?
+                </button>
+                <div className="counter">
+                  <p>{levels[currentLevel]}</p>
+                  <button type="button" onClick={this.handleIncrementLevel}>
+                    {`->`}
+                  </button>
+                </div>
+              </>
+            )}
+            <button type="button" onClick={this.handleQuitGame}>
+              Quit
+            </button>
           </>
         ) : (
           <>
             <button type="button" onClick={this.handleCreateGame}>
-              Start
+              Start a game
             </button>
+            <div className="counter">
+              <p>{levels[currentLevel]}</p>
+              <button type="button" onClick={this.handleIncrementLevel}>
+                {`->`}
+              </button>
+            </div>
           </>
         )}
       </div>

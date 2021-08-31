@@ -3,7 +3,7 @@ import * as Constants from "../utils/constants";
 
 const API_URL = Constants.API_URL;
 
-export const createGame = (): Promise<AxiosResponse> => {
+export const createGame = (difficulty = "EASY"): Promise<AxiosResponse> => {
   const options: AxiosRequestConfig = {
     headers: {
       Accept: "application/json",
@@ -14,8 +14,12 @@ export const createGame = (): Promise<AxiosResponse> => {
     },
   };
 
+  const difficultyPayload = {
+    level: difficulty,
+  };
+
   const route = `${API_URL}/games`;
-  return axios.post(route, undefined, options);
+  return axios.post(route, difficultyPayload, options);
 };
 
 export const getAllGames = (): Promise<AxiosResponse> => {
